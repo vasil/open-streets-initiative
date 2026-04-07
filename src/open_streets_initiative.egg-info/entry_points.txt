@@ -1,0 +1,2 @@
+[console_scripts]
+osi = open_streets_initiative.cli:app
