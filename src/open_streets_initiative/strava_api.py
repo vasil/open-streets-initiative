@@ -12,6 +12,7 @@ from .token_store import load_json, save_json
 
 TOKEN_URL = "https://www.strava.com/oauth/token"
 ACTIVITIES_URL = "https://www.strava.com/api/v3/athlete/activities"
+STREAMS_URL = "https://www.strava.com/api/v3/activities/{activity_id}/streams"
 
 
 class StravaConfigError(RuntimeError):
@@ -86,6 +87,22 @@ def ensure_access_token(settings: Settings) -> str:
 
     refreshed = refresh_access_token(settings, str(refresh_token))
     return str(refreshed["access_token"])
+
+
+def fetch_activity_streams(
+    access_token: str,
+    activity_id: int,
+    keys: list[str] | None = None,
+) -> dict[str, Any]:
+    if keys is None:
+        keys = ["latlng", "time", "altitude"]
+    url = STREAMS_URL.format(activity_id=activity_id)
+    params = {"keys": ",".join(keys), "key_by_type": "true"}
+    headers = {"Authorization": f"Bearer {access_token}"}
+    with httpx.Client(timeout=30) as client:
+        response = client.get(url, headers=headers, params=params)
+    response.raise_for_status()
+    return response.json()
 
 
 def fetch_activities_page(

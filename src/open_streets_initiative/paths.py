@@ -6,9 +6,12 @@ DATA_DIR = PROJECT_ROOT / "data"
 STRAVA_DIR = DATA_DIR / "strava"
 ACTIVITIES_DIR = STRAVA_DIR / "activities"
 SENSORS_DIR = DATA_DIR / "sensors"
+MATCHES_DIR = DATA_DIR / "matches"
 DERIVED_DIR = DATA_DIR / "derived"
+STREAMS_DIR = STRAVA_DIR / "streams"
 TOKENS_DIR = PROJECT_ROOT / "tokens"
 CACHE_DIR = PROJECT_ROOT / "cache"
+DOCS_DIR = PROJECT_ROOT / "docs"
 STRAVA_TOKENS_FILE = TOKENS_DIR / "strava_tokens.json"
 
 
@@ -17,7 +20,9 @@ def ensure_project_dirs() -> None:
         DATA_DIR,
         STRAVA_DIR,
         ACTIVITIES_DIR,
+        STREAMS_DIR,
         SENSORS_DIR,
+        MATCHES_DIR,
         DERIVED_DIR,
         TOKENS_DIR,
         CACHE_DIR,

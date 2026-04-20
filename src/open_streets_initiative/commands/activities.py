@@ -7,12 +7,13 @@ import typer
 from rich import print
 
 from ..config import load_settings
-from ..paths import ACTIVITIES_DIR
+from ..paths import ACTIVITIES_DIR, STREAMS_DIR
 from ..strava_api import (
     StravaAuthError,
     StravaConfigError,
     ensure_access_token,
     fetch_activities_page,
+    fetch_activity_streams,
 )
 
 
@@ -76,6 +77,36 @@ def fetch(
     print(f"- activities seen: {total_seen}")
     print(f"- files written: {written}")
     print(f"- files skipped: {skipped}")
+
+
+@app.command("streams")
+def streams(
+    activity_id: int = typer.Option(..., help="Strava activity ID."),
+    overwrite: bool = typer.Option(False, help="Overwrite existing stream file."),
+) -> None:
+    """Fetch GPS+time streams for a single activity and save locally."""
+    settings = load_settings()
+    try:
+        access_token = ensure_access_token(settings)
+    except (StravaConfigError, StravaAuthError) as exc:
+        raise typer.BadParameter(str(exc)) from exc
+
+    output_file = STREAMS_DIR / f"{activity_id}.json"
+    if output_file.exists() and not overwrite:
+        print(f"Stream file already exists: {output_file}")
+        print("Use --overwrite to re-fetch.")
+        return
+
+    data = fetch_activity_streams(access_token, activity_id)
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    output_file.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+    latlng_count = len(data.get("latlng", {}).get("data", []))
+    time_count = len(data.get("time", {}).get("data", []))
+    print(f"GPS stream fetched for activity {activity_id}.")
+    print(f"- latlng points : {latlng_count}")
+    print(f"- time points   : {time_count}")
+    print(f"- saved to      : {output_file}")
 
 
 def _write_activity(path: Path, activity: dict) -> None:

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Open Streets Initiative — Hazard Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: sans-serif; }
+    #map { width: 100vw; height: 100vh; }
+    #title {
+      position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+      z-index: 1000; background: rgba(0,0,0,0.72); color: #fff;
+      padding: 8px 18px; border-radius: 6px; font-size: 15px; font-weight: bold;
+      white-space: nowrap; pointer-events: none;
+    }
+    #legend {
+      position: absolute; bottom: 30px; right: 10px; z-index: 1000;
+      background: rgba(255,255,255,0.93); padding: 12px 16px;
+      border-radius: 6px; font-size: 13px; line-height: 1.8;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+    .dot { display: inline-block; width: 13px; height: 13px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+    #stats {
+      position: absolute; top: 12px; left: 10px; z-index: 1000;
+      background: rgba(255,255,255,0.93); padding: 10px 14px;
+      border-radius: 6px; font-size: 12px; line-height: 1.7;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+  </style>
+</head>
+<body>
+  <div id="title">Open Streets Initiative — Hazard Map</div>
+  <div id="stats">
+    <b>3 sessions analysed</b><br>
+    511 shock events<br>
+    38 hazard clusters<br>
+    Threshold: mean+5σ per session<br>
+    Peak: 51.21 g
+  </div>
+  <div id="legend">
+    <b>Severity (peak g-force)</b><br>
+    <span class="dot" style="background:#d32f2f"></span> Extreme (&gt;30 g)<br>
+    <span class="dot" style="background:#f57c00"></span> Severe (15–30 g)<br>
+    <span class="dot" style="background:#fbc02d"></span> Moderate (8–15 g)<br>
+    <span class="dot" style="background:#388e3c"></span> Notable (&lt;8 g)<br>
+    <br><i>Circle size = shock count</i>
+  </div>
+  <div id="map"></div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    var map = L.map('map');
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 19
+    }).addTo(map);
+
+        L.circleMarker([41.347359, 21.567711], {radius: 8, fillColor: '#d32f2f', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Extreme</b><br>Peak: <b>51.21 g</b><br>Shocks: 10<br>Sessions (3):<br>• Afternoon Push (2026-04-20)<br>• Morning Push (2024-04-11)<br>• Rear Window Push (2024-09-21)<br><small>41.347359, 21.567711</small>').addTo(map);
+    L.circleMarker([41.347938, 21.567073], {radius: 9, fillColor: '#d32f2f', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Extreme</b><br>Peak: <b>44.86 g</b><br>Shocks: 21<br>Sessions (2):<br>• Morning Push (2024-04-11)<br>• Rear Window Push (2024-09-21)<br><small>41.347938, 21.567073</small>').addTo(map);
+    L.circleMarker([41.34873, 21.565992], {radius: 11, fillColor: '#d32f2f', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Extreme</b><br>Peak: <b>35.09 g</b><br>Shocks: 47<br>Sessions (2):<br>• Morning Push (2024-04-11)<br>• Rear Window Push (2024-09-21)<br><small>41.34873, 21.565992</small>').addTo(map);
+    L.circleMarker([41.344192, 21.549242], {radius: 8, fillColor: '#d32f2f', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Extreme</b><br>Peak: <b>34.62 g</b><br>Shocks: 7<br>Sessions (1):<br>• Morning Push (2024-04-11)<br><small>41.344192, 21.549242</small>').addTo(map);
+    L.circleMarker([41.348316, 21.566608], {radius: 12, fillColor: '#d32f2f', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Extreme</b><br>Peak: <b>32.65 g</b><br>Shocks: 60<br>Sessions (3):<br>• Afternoon Push (2026-04-20)<br>• Morning Push (2024-04-11)<br>• Rear Window Push (2024-09-21)<br><small>41.348316, 21.566608</small>').addTo(map);
+    L.circleMarker([41.346909, 21.567244], {radius: 8, fillColor: '#d32f2f', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Extreme</b><br>Peak: <b>30.82 g</b><br>Shocks: 11<br>Sessions (1):<br>• Rear Window Push (2024-09-21)<br><small>41.346909, 21.567244</small>').addTo(map);
+    L.circleMarker([41.348261, 21.566684], {radius: 10, fillColor: '#f57c00', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Severe</b><br>Peak: <b>28.4 g</b><br>Shocks: 32<br>Sessions (3):<br>• Afternoon Push (2026-04-20)<br>• Morning Push (2024-04-11)<br>• Rear Window Push (2024-09-21)<br><small>41.348261, 21.566684</small>').addTo(map);
+    L.circleMarker([41.346982, 21.5672], {radius: 9, fillColor: '#f57c00', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Severe</b><br>Peak: <b>28.25 g</b><br>Shocks: 15<br>Sessions (1):<br>• Morning Push (2024-04-11)<br><small>41.346982, 21.5672</small>').addTo(map);
+    L.circleMarker([41.344178, 21.549265], {radius: 9, fillColor: '#f57c00', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Severe</b><br>Peak: <b>28.04 g</b><br>Shocks: 16<br>Sessions (2):<br>• Morning Push (2024-04-11)<br>• Rear Window Push (2024-09-21)<br><small>41.344178, 21.549265</small>').addTo(map);
+    L.circleMarker([41.347258, 21.567626], {radius: 8, fillColor: '#f57c00', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Severe</b><br>Peak: <b>26.44 g</b><br>Shocks: 12<br>Sessions (3):<br>• Afternoon Push (2026-04-20)<br>• Morning Push (2024-04-11)<br>• Rear Window Push (2024-09-21)<br><small>41.347258, 21.567626</small>').addTo(map);
+    L.circleMarker([41.348693, 21.566077], {radius: 9, fillColor: '#f57c00', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Severe</b><br>Peak: <b>25.97 g</b><br>Shocks: 15<br>Sessions (2):<br>• Morning Push (2024-04-11)<br>• Rear Window Push (2024-09-21)<br><small>41.348693, 21.566077</small>').addTo(map);
+    L.circleMarker([41.347443, 21.567613], {radius: 9, fillColor: '#f57c00', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Severe</b><br>Peak: <b>25.58 g</b><br>Shocks: 24<br>Sessions (1):<br>• Morning Push (2024-04-11)<br><small>41.347443, 21.567613</small>').addTo(map);
+    L.circleMarker([41.348011, 21.566996], {radius: 8, fillColor: '#f57c00', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Severe</b><br>Peak: <b>25.28 g</b><br>Shocks: 5<br>Sessions (2):<br>• Morning Push (2024-04-11)<br>• Rear Window Push (2024-09-21)<br><small>41.348011, 21.566996</small>').addTo(map);
+    L.circleMarker([41.347957, 21.567057], {radius: 8, fillColor: '#f57c00', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Severe</b><br>Peak: <b>22.68 g</b><br>Shocks: 6<br>Sessions (2):<br>• Morning Push (2024-04-11)<br>• Rear Window Push (2024-09-21)<br><small>41.347957, 21.567057</small>').addTo(map);
+    L.circleMarker([41.346928, 21.56727], {radius: 9, fillColor: '#f57c00', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Severe</b><br>Peak: <b>22.47 g</b><br>Shocks: 15<br>Sessions (1):<br>• Rear Window Push (2024-09-21)<br><small>41.346928, 21.56727</small>').addTo(map);
+    L.circleMarker([41.347332, 21.567682], {radius: 11, fillColor: '#f57c00', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Severe</b><br>Peak: <b>22.42 g</b><br>Shocks: 55<br>Sessions (3):<br>• Afternoon Push (2026-04-20)<br>• Morning Push (2024-04-11)<br>• Rear Window Push (2024-09-21)<br><small>41.347332, 21.567682</small>').addTo(map);
+    L.circleMarker([41.348595, 21.566205], {radius: 10, fillColor: '#f57c00', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Severe</b><br>Peak: <b>22.27 g</b><br>Shocks: 31<br>Sessions (2):<br>• Morning Push (2024-04-11)<br>• Rear Window Push (2024-09-21)<br><small>41.348595, 21.566205</small>').addTo(map);
+    L.circleMarker([41.348731, 21.565936], {radius: 8, fillColor: '#f57c00', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Severe</b><br>Peak: <b>21.44 g</b><br>Shocks: 2<br>Sessions (1):<br>• Morning Push (2024-04-11)<br><small>41.348731, 21.565936</small>').addTo(map);
+    L.circleMarker([41.348081, 21.566904], {radius: 8, fillColor: '#f57c00', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Severe</b><br>Peak: <b>21.4 g</b><br>Shocks: 7<br>Sessions (1):<br>• Morning Push (2024-04-11)<br><small>41.348081, 21.566904</small>').addTo(map);
+    L.circleMarker([41.347245, 21.567601], {radius: 9, fillColor: '#f57c00', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Severe</b><br>Peak: <b>20.99 g</b><br>Shocks: 19<br>Sessions (2):<br>• Afternoon Push (2026-04-20)<br>• Morning Push (2024-04-11)<br><small>41.347245, 21.567601</small>').addTo(map);
+    L.circleMarker([41.348185, 21.566778], {radius: 8, fillColor: '#f57c00', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Severe</b><br>Peak: <b>20.92 g</b><br>Shocks: 7<br>Sessions (1):<br>• Morning Push (2024-04-11)<br><small>41.348185, 21.566778</small>').addTo(map);
+    L.circleMarker([41.348405, 21.566502], {radius: 9, fillColor: '#f57c00', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Severe</b><br>Peak: <b>20.87 g</b><br>Shocks: 19<br>Sessions (3):<br>• Afternoon Push (2026-04-20)<br>• Morning Push (2024-04-11)<br>• Rear Window Push (2024-09-21)<br><small>41.348405, 21.566502</small>').addTo(map);
+    L.circleMarker([41.348564, 21.566261], {radius: 8, fillColor: '#f57c00', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Severe</b><br>Peak: <b>20.39 g</b><br>Shocks: 9<br>Sessions (2):<br>• Morning Push (2024-04-11)<br>• Rear Window Push (2024-09-21)<br><small>41.348564, 21.566261</small>').addTo(map);
+    L.circleMarker([41.347026, 21.567324], {radius: 8, fillColor: '#f57c00', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Severe</b><br>Peak: <b>19.71 g</b><br>Shocks: 4<br>Sessions (2):<br>• Morning Push (2024-04-11)<br>• Rear Window Push (2024-09-21)<br><small>41.347026, 21.567324</small>').addTo(map);
+    L.circleMarker([41.348522, 21.566319], {radius: 9, fillColor: '#f57c00', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Severe</b><br>Peak: <b>17.52 g</b><br>Shocks: 17<br>Sessions (2):<br>• Morning Push (2024-04-11)<br>• Rear Window Push (2024-09-21)<br><small>41.348522, 21.566319</small>').addTo(map);
+    L.circleMarker([41.348047, 21.566946], {radius: 8, fillColor: '#f57c00', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Severe</b><br>Peak: <b>17.09 g</b><br>Shocks: 1<br>Sessions (1):<br>• Morning Push (2024-04-11)<br><small>41.348047, 21.566946</small>').addTo(map);
+    L.circleMarker([41.348636, 21.566145], {radius: 8, fillColor: '#f57c00', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Severe</b><br>Peak: <b>16.75 g</b><br>Shocks: 3<br>Sessions (2):<br>• Morning Push (2024-04-11)<br>• Rear Window Push (2024-09-21)<br><small>41.348636, 21.566145</small>').addTo(map);
+    L.circleMarker([41.348484, 21.566397], {radius: 9, fillColor: '#f57c00', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Severe</b><br>Peak: <b>15.54 g</b><br>Shocks: 15<br>Sessions (1):<br>• Morning Push (2024-04-11)<br><small>41.348484, 21.566397</small>').addTo(map);
+    L.circleMarker([41.348149, 21.566823], {radius: 8, fillColor: '#f57c00', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Severe</b><br>Peak: <b>15.53 g</b><br>Shocks: 6<br>Sessions (2):<br>• Morning Push (2024-04-11)<br>• Rear Window Push (2024-09-21)<br><small>41.348149, 21.566823</small>').addTo(map);
+    L.circleMarker([41.347169, 21.567512], {radius: 8, fillColor: '#f57c00', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Severe</b><br>Peak: <b>15.02 g</b><br>Shocks: 7<br>Sessions (2):<br>• Afternoon Push (2026-04-20)<br>• Morning Push (2024-04-11)<br><small>41.347169, 21.567512</small>').addTo(map);
+    L.circleMarker([41.34711, 21.567434], {radius: 8, fillColor: '#fbc02d', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Moderate</b><br>Peak: <b>14.86 g</b><br>Shocks: 3<br>Sessions (2):<br>• Morning Push (2024-04-11)<br>• Rear Window Push (2024-09-21)<br><small>41.34711, 21.567434</small>').addTo(map);
+    L.circleMarker([41.347126, 21.567466], {radius: 8, fillColor: '#fbc02d', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Moderate</b><br>Peak: <b>14.73 g</b><br>Shocks: 2<br>Sessions (2):<br>• Afternoon Push (2026-04-20)<br>• Rear Window Push (2024-09-21)<br><small>41.347126, 21.567466</small>').addTo(map);
+    L.circleMarker([41.348366, 21.566558], {radius: 8, fillColor: '#fbc02d', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Moderate</b><br>Peak: <b>14.4 g</b><br>Shocks: 2<br>Sessions (1):<br>• Morning Push (2024-04-11)<br><small>41.348366, 21.566558</small>').addTo(map);
+    L.circleMarker([41.348232, 21.566711], {radius: 8, fillColor: '#fbc02d', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Moderate</b><br>Peak: <b>12.94 g</b><br>Shocks: 2<br>Sessions (2):<br>• Afternoon Push (2026-04-20)<br>• Morning Push (2024-04-11)<br><small>41.348232, 21.566711</small>').addTo(map);
+    L.circleMarker([41.348449, 21.566442], {radius: 8, fillColor: '#fbc02d', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Moderate</b><br>Peak: <b>12.17 g</b><br>Shocks: 1<br>Sessions (1):<br>• Morning Push (2024-04-11)<br><small>41.348449, 21.566442</small>').addTo(map);
+    L.circleMarker([41.347037, 21.567366], {radius: 8, fillColor: '#fbc02d', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Moderate</b><br>Peak: <b>11.36 g</b><br>Shocks: 1<br>Sessions (1):<br>• Afternoon Push (2026-04-20)<br><small>41.347037, 21.567366</small>').addTo(map);
+    L.circleMarker([41.347546, 21.567538], {radius: 8, fillColor: '#fbc02d', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Moderate</b><br>Peak: <b>10.56 g</b><br>Shocks: 1<br>Sessions (1):<br>• Afternoon Push (2026-04-20)<br><small>41.347546, 21.567538</small>').addTo(map);
+    L.circleMarker([41.347815, 21.567208], {radius: 8, fillColor: '#fbc02d', color: '#fff', weight: 1.5, fillOpacity: 0.85}).bindPopup('<b>Moderate</b><br>Peak: <b>10.52 g</b><br>Shocks: 1<br>Sessions (1):<br>• Afternoon Push (2026-04-20)<br><small>41.347815, 21.567208</small>').addTo(map);
+
+    map.fitBounds([
+      [41.343178, 21.548242],
+      [41.349731, 21.568711]
+    ]);
+  </script>
+</body>
+</html>

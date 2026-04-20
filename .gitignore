@@ -18,3 +18,8 @@ tokens/**
 cache/**
 !cache/
 !cache/.gitkeep
+
+*.egg-info/
+
+# generated report output — reproducible via `osi report generate`
+docs/advocacy-report.html
