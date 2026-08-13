@@ -19,12 +19,18 @@ app = typer.Typer(help="Advocacy report generation.")
 # ---------------------------------------------------------------------------
 
 CLUSTER_RADIUS_M = 5
-SHOCK_SIGMA = 5          # threshold = mean + SHOCK_SIGMA * std
+SHOCK_SIGMA = 7          # threshold = mean + SHOCK_SIGMA * std
 SEVERITY_TIERS = [
     (30.0, "Extreme",  "#d32f2f"),
     (15.0, "Severe",   "#f57c00"),
     ( 8.0, "Moderate", "#fbc02d"),
     ( 0.0, "Notable",  "#388e3c"),
+]
+RFC_BURDEN_TIERS = [
+    (75, "Severe",   "#c62828"),
+    (50, "High",     "#f57c00"),
+    (25, "Moderate", "#fbc02d"),
+    ( 0, "Low",      "#388e3c"),
 ]
 
 ADVOCACY_STATEMENT = """\
@@ -93,9 +99,9 @@ def _severity(peak_g: float) -> tuple[str, str]:
 # Data loading and analysis
 # ---------------------------------------------------------------------------
 
-def _load_session_names() -> dict[str, tuple[str, str]]:
-    """Return {recording_id: (activity_name, date_str)} from matches + activities."""
-    result: dict[str, tuple[str, str]] = {}
+def _load_session_meta() -> dict[str, tuple[str, str, float]]:
+    """Return {recording_id: (activity_name, date_str, distance_km)} from matches + activities."""
+    result: dict[str, tuple[str, str, float]] = {}
     for mf in MATCHES_DIR.glob("*.json"):
         m = json.loads(mf.read_text(encoding="utf-8"))
         rid = m["recording_id"]
@@ -105,16 +111,20 @@ def _load_session_names() -> dict[str, tuple[str, str]]:
             act = json.loads(af.read_text(encoding="utf-8"))
             name = act.get("name", aid)
             date_str = act.get("start_date", "")[:10]
+            distance_km = act.get("distance", 0) / 1000.0
         else:
             name = aid
             date_str = ""
-        result[rid] = (name, date_str)
+            distance_km = 0.0
+        result[rid] = (name, date_str, distance_km)
     return result
 
 
-def _compute_shocks(csv_path: Path, session_label: str) -> list[dict]:
-    """Return list of shock-event dicts for one derived CSV."""
-    rows: list[tuple[float, float, float]] = []  # (lat, lng, magnitude)
+def _compute_shocks(
+    csv_path: Path, session_label: str
+) -> tuple[list[dict], float, float, float]:
+    """Return (shocks, session_mean, session_std, overall_gyro_mean) for one derived CSV."""
+    rows: list[tuple[float, float, float, float]] = []  # (lat, lng, magnitude, gyro_magnitude)
     with open(csv_path, encoding="utf-8") as f:
         for row in csv.DictReader(f):
             mag_str = row.get("magnitude", "")
@@ -123,23 +133,30 @@ def _compute_shocks(csv_path: Path, session_label: str) -> list[dict]:
             if not mag_str or not lat_str or not lng_str:
                 continue
             try:
-                rows.append((float(lat_str), float(lng_str), float(mag_str)))
+                gyro_str = row.get("gyro_magnitude", "")
+                gyro_mag = float(gyro_str) if gyro_str else 0.0
+                rows.append((float(lat_str), float(lng_str), float(mag_str), gyro_mag))
             except ValueError:
                 continue
 
     if not rows:
-        return []
+        return [], 0.0, 0.0, 0.0
 
     magnitudes = [r[2] for r in rows]
+    gyro_mags = [r[3] for r in rows]
     mean = statistics.mean(magnitudes)
     std = statistics.stdev(magnitudes) if len(magnitudes) > 1 else 0.0
+    overall_gyro_mean = statistics.mean(gyro_mags) if gyro_mags else 0.0
     threshold = mean + SHOCK_SIGMA * std
 
     shocks = []
-    for lat, lng, mag in rows:
+    for lat, lng, mag, gyro_mag in rows:
         if mag > threshold:
-            shocks.append({"lat": lat, "lng": lng, "magnitude": mag, "session": session_label})
-    return shocks
+            shocks.append({
+                "lat": lat, "lng": lng, "magnitude": mag,
+                "session": session_label, "gyro_magnitude": gyro_mag,
+            })
+    return shocks, mean, std, overall_gyro_mean
 
 
 def _cluster_shocks(shocks: list[dict]) -> list[dict]:
@@ -169,6 +186,38 @@ def _cluster_shocks(shocks: list[dict]) -> list[dict]:
     return clusters
 
 
+def _compute_rfc(
+    shocks: list[dict],
+    session_mean: float,
+    overall_gyro_mean: float,
+    distance_km: float,
+) -> float:
+    """Compute the raw Relative Fatigue Cost score for one session.
+
+    RFC = shock_rate × mean_excess × gyro_factor
+
+    shock_rate   — shocks per km travelled (normalises for route length)
+    mean_excess  — how far above the session mean those shocks land on average (g)
+    gyro_factor  — ratio of gyro activity during shocks vs. the full session (≥ 1.0)
+    """
+    if not shocks or distance_km <= 0:
+        return 0.0
+
+    shock_rate = len(shocks) / distance_km
+    mean_excess = statistics.mean(s["magnitude"] for s in shocks) - session_mean
+    shock_gyro_mean = statistics.mean(s["gyro_magnitude"] for s in shocks)
+    gyro_factor = (shock_gyro_mean / overall_gyro_mean + 1.0) if overall_gyro_mean > 0 else 1.0
+
+    return shock_rate * max(mean_excess, 0.0) * gyro_factor
+
+
+def _rfc_burden_label(rfc_norm: float) -> tuple[str, str]:
+    for threshold, label, color in RFC_BURDEN_TIERS:
+        if rfc_norm >= threshold:
+            return label, color
+    return "Low", "#388e3c"
+
+
 # ---------------------------------------------------------------------------
 # HTML generation
 # ---------------------------------------------------------------------------
@@ -191,6 +240,7 @@ def _build_html(
     total_points: int,
     total_shocks: int,
     report_date: str,
+    rfc_data: list[dict],
 ) -> str:
     peak_g = max((cl["peak"] for cl in clusters), default=0.0)
     sorted_clusters = sorted(clusters, key=lambda c: -c["peak"])
@@ -239,6 +289,30 @@ def _build_html(
         for para in ADVOCACY_STATEMENT.strip().split("\n\n")
         if para.strip()
     )
+
+    # RFC session table rows
+    rfc_rows = []
+    for entry in rfc_data:
+        label, color = _rfc_burden_label(entry["rfc_norm"])
+        bar_width = max(int(entry["rfc_norm"]), 2)
+        rfc_rows.append(
+            f"<tr>"
+            f"<td>{entry['name']}</td>"
+            f"<td>{entry['date_str']}</td>"
+            f"<td>{entry['distance_km']:.1f} km</td>"
+            f"<td>{entry['shock_count']}</td>"
+            f"<td>"
+            f"  <div style='display:flex;align-items:center;gap:8px;'>"
+            f"    <div style='flex:1;background:#eee;border-radius:3px;height:10px;'>"
+            f"      <div style='width:{bar_width}%;background:{color};height:10px;border-radius:3px;'></div>"
+            f"    </div>"
+            f"    <span style='font-family:sans-serif;font-size:12px;width:28px;text-align:right'>{entry['rfc_norm']}</span>"
+            f"  </div>"
+            f"</td>"
+            f"<td><span class='badge' style='background:{color}'>{label}</span></td>"
+            f"</tr>"
+        )
+    rfc_table_html = "\n".join(rfc_rows)
 
     # Bounding box for map fitBounds
     lats = [cl["lat"] for cl in clusters]
@@ -369,6 +443,29 @@ def _build_html(
     </div>
   </section>
 
+  <!-- ── ROUTE BURDEN SCORES ── -->
+  <section>
+    <h2>Route Burden Scores — Relative Fatigue Cost (RFC)</h2>
+    <p style="font-size:14px; font-family:sans-serif; color:#444; margin-bottom:16px;">
+      The RFC score measures how much physical burden each route imposed on the wheelchair
+      user, relative to other sessions in this dataset. It combines the frequency of severe
+      impacts per kilometre, how far those impacts exceed the session baseline, and the
+      rotational instability that accompanied them. A score of 100 represents the highest
+      measured burden; lower scores are proportional to it.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Session</th><th>Date</th><th>Distance</th>
+          <th>Shocks</th><th>RFC Score (0–100)</th><th>Burden</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rfc_table_html}
+      </tbody>
+    </table>
+  </section>
+
   <!-- ── PERSONAL STATEMENT ── -->
   <section>
     <h2>Personal Statement</h2>
@@ -466,14 +563,20 @@ def _build_html(
       </div>
       <div class="method-step">
         Shock events were identified as samples exceeding the per-session threshold
-        of mean + {SHOCK_SIGMA}σ (five standard deviations above the session mean).
-        This conservative threshold filters normal rolling vibration and captures
-        only genuine impact events.
+        of mean + {SHOCK_SIGMA}σ ({SHOCK_SIGMA} standard deviations above the session mean).
+        Streets produce a constant baseline of vibration; this elevated threshold
+        filters that baseline and retains only the most severe discrete impacts.
       </div>
       <div class="method-step">
         Shock events within {CLUSTER_RADIUS_M} metres of each other were merged into
         a single hazard cluster. Each cluster records its peak impact force, total
         shock count, and the sessions in which it was observed.
+      </div>
+      <div class="method-step">
+        The Relative Fatigue Cost (RFC) score was computed per session as:
+        RFC = (shocks ÷ km) × mean excess force (g) × gyro instability factor.
+        Scores were then normalised to a 0–100 scale relative to the worst session
+        in the dataset, so they can be compared directly across routes.
       </div>
     </div>
     <p style="margin-top:16px; font-size:14px;">
@@ -510,7 +613,7 @@ def generate() -> None:
     """Generate an advocacy evidence report as a self-contained HTML file."""
     DOCS_DIR.mkdir(parents=True, exist_ok=True)
 
-    session_names = _load_session_names()
+    session_meta = _load_session_meta()
     derived_files = sorted(DERIVED_DIR.glob("*.csv"))
 
     if not derived_files:
@@ -519,22 +622,38 @@ def generate() -> None:
 
     all_shocks: list[dict] = []
     total_points = 0
+    rfc_raw_data: list[dict] = []
 
     for csv_path in derived_files:
-        # recording_id is the part before "__"
         stem = csv_path.stem
         recording_id = stem.split("__")[0] if "__" in stem else stem
-        name, date_str = session_names.get(recording_id, (recording_id, ""))
+        name, date_str, distance_km = session_meta.get(recording_id, (recording_id, "", 0.0))
         session_label = f"{name} ({date_str})" if date_str else name
 
-        shocks = _compute_shocks(csv_path, session_label)
+        shocks, session_mean, session_std, overall_gyro_mean = _compute_shocks(csv_path, session_label)
         all_shocks.extend(shocks)
 
-        # count data points
+        rfc_score = _compute_rfc(shocks, session_mean, overall_gyro_mean, distance_km)
+        rfc_raw_data.append({
+            "name": name,
+            "date_str": date_str,
+            "distance_km": distance_km,
+            "shock_count": len(shocks),
+            "rfc_raw": rfc_score,
+        })
+
         with open(csv_path, encoding="utf-8") as f:
             total_points += sum(1 for _ in f) - 1  # subtract header
 
-        print(f"  {session_label}: {len(shocks)} shock events")
+        print(f"  {session_label}: {len(shocks)} shock events, RFC raw={rfc_score:.3f}")
+
+    # Normalise RFC scores to 0-100 relative to the worst session
+    max_rfc = max((e["rfc_raw"] for e in rfc_raw_data), default=1.0) or 1.0
+    rfc_data = [
+        {**e, "rfc_norm": round(e["rfc_raw"] / max_rfc * 100)}
+        for e in rfc_raw_data
+    ]
+    rfc_data.sort(key=lambda e: -e["rfc_norm"])
 
     clusters = _cluster_shocks(all_shocks)
     clusters.sort(key=lambda c: -c["peak"])
@@ -546,6 +665,7 @@ def generate() -> None:
         total_points=total_points,
         total_shocks=len(all_shocks),
         report_date=report_date,
+        rfc_data=rfc_data,
     )
 
     out = DOCS_DIR / "advocacy-report.html"
@@ -559,3 +679,7 @@ def generate() -> None:
     if clusters:
         peak = clusters[0]["peak"]
         print(f"  Peak     : {peak:.2f} g")
+    print("\n  RFC scores (normalised 0–100):")
+    for e in rfc_data:
+        label, _ = _rfc_burden_label(e["rfc_norm"])
+        print(f"    {e['name']} ({e['date_str']}): {e['rfc_norm']} [{label}]")

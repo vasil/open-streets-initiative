@@ -312,10 +312,10 @@ def waytrace(
         ts_utc = datetime.fromtimestamp(event_epoch, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
         features.append({
-            "ts_utc": ts_utc,
+            "timestamp_utc": ts_utc,
             "lat": round(lat, 7),
             "lng": round(lng, 7),
-            "alt": round(alt, 1) if alt is not None else "",
+            "altitude": round(alt, 1) if alt is not None else "",
             "event": event_type,
             "magnitude": round(magnitude, 2),
             "x": round(x, 4),
@@ -338,8 +338,8 @@ def waytrace(
                 "properties": {
                     "event":     f["event"],
                     "magnitude": f["magnitude"],
-                    "timestamp_utc": f["ts_utc"],
-                    "altitude":  f["alt"],
+                    "timestamp_utc": f["timestamp_utc"],
+                    "altitude":  f["altitude"],
                     "x": f["x"], "y": f["y"], "z": f["z"],
                 },
             }

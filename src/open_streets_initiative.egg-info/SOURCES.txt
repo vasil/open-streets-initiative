@@ -17,4 +17,5 @@ src/open_streets_initiative/commands/activities.py
 src/open_streets_initiative/commands/analyze.py
 src/open_streets_initiative/commands/auth.py
 src/open_streets_initiative/commands/match.py
+src/open_streets_initiative/commands/report.py
 src/open_streets_initiative/commands/sensors.py

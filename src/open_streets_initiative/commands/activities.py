@@ -82,9 +82,10 @@ def fetch(
 @app.command("streams")
 def streams(
     activity_id: int = typer.Option(..., help="Strava activity ID."),
+    keys: str = typer.Option("latlng,time,altitude", help="Comma-separated stream types to fetch."),
     overwrite: bool = typer.Option(False, help="Overwrite existing stream file."),
 ) -> None:
-    """Fetch GPS+time streams for a single activity and save locally."""
+    """Fetch streams for a single activity and save locally."""
     settings = load_settings()
     try:
         access_token = ensure_access_token(settings)
@@ -97,15 +98,15 @@ def streams(
         print("Use --overwrite to re-fetch.")
         return
 
-    data = fetch_activity_streams(access_token, activity_id)
+    key_list = [k.strip() for k in keys.split(",") if k.strip()]
+    data = fetch_activity_streams(access_token, activity_id, keys=key_list)
     output_file.parent.mkdir(parents=True, exist_ok=True)
     output_file.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
-    latlng_count = len(data.get("latlng", {}).get("data", []))
-    time_count = len(data.get("time", {}).get("data", []))
-    print(f"GPS stream fetched for activity {activity_id}.")
-    print(f"- latlng points : {latlng_count}")
-    print(f"- time points   : {time_count}")
+    print(f"Streams fetched for activity {activity_id}.")
+    for key in key_list:
+        count = len(data.get(key, {}).get("data", []))
+        print(f"- {key:<16}: {count} points")
     print(f"- saved to      : {output_file}")
 
 
